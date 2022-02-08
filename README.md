@@ -1,2 +1,3 @@
-# nft-smartcontract
-NFT smartcontract
+# Be[In]Crypto NFT Smartcontract
+
+NFT Smartcontract development project
