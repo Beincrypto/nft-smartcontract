@@ -1,0 +1,6 @@
+build/
+coverage/
+deployments/
+node_modules/
+
+coverage.json
