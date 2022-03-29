@@ -13,7 +13,6 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     treasuryWallet = treasury // TODO: set address on hardhat.config
   }
 
-  console.log(deployer)
   await deploy('DigitalHanamiNFT', {
     from: deployer,
     args: ['Digital Hanami', symbol, treasuryWallet],

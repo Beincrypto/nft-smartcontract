@@ -131,7 +131,7 @@ const config: HardhatUserConfig = {
     test: 1,
     test2: 2,
     treasury: {
-      1: '0xdc6ed9a7a2afa95a2cb920fd50a14a75248e9561', // TODO: deployer wallet, change by treasury one
+      1: '0x4cbc4022fd346ea8b1eff9e11e9f0d76767b5fb2', // TODO: deployer wallet, change by treasury one
     },
   },
   etherscan: {
