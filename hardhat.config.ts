@@ -9,16 +9,16 @@ import '@typechain/hardhat'
 
 function createHardhatNetworkConfig(
   fork: boolean,
-  alchemyApiKey?: string,
+  rpcApiKey?: string,
   deployerPrivateKey?: string,
   testPrivateKey?: string,
   test2PrivateKey?: string,
 ): HardhatNetworkUserConfig {
-  if (fork && alchemyApiKey && deployerPrivateKey && testPrivateKey && test2PrivateKey) {
+  if (fork && rpcApiKey && deployerPrivateKey && testPrivateKey && test2PrivateKey) {
     return {
-      forking: {
-        url: `https://rinkeby.infura.io/v3/${alchemyApiKey}`,
-      },
+      // forking: {
+      //  url: `https://mainnet.infura.io/v3/${rpcApiKey}`,
+      // },
       chainId: 31337,
       allowUnlimitedContractSize: false,
       accounts: [
@@ -43,27 +43,29 @@ function createHardhatNetworkConfig(
 }
 
 function createRinkebyTestnetConfig(
-  alchemyApiKey: string,
+  rpcApiKey: string,
   deployerPrivateKey: string,
   testPrivateKey: string,
   test2PrivateKey: string,
 ): NetworkUserConfig {
   return {
-    url: `https://rinkeby.infura.io/v3/${alchemyApiKey}`,
+    url: `https://rinkeby.infura.io/v3/${rpcApiKey}`,
     accounts: [deployerPrivateKey, testPrivateKey, test2PrivateKey],
+    chainId: 4,
   }
 }
 
-function createEthMainnetConfig(alchemyApiKey: string, deployerPrivateKey: string): NetworkUserConfig {
+function createEthMainnetConfig(rpcApiKey: string, deployerPrivateKey: string): NetworkUserConfig {
   return {
-    url: `https://mainnet.infura.io/v3/${alchemyApiKey}`,
+    url: `https://mainnet.infura.io/v3/${rpcApiKey}`,
     accounts: [deployerPrivateKey],
+    chainId: 1,
   }
 }
 
 function configureNetworks(networkConfig: BicNetworkConfig): NetworksUserConfig {
   if (
-    networkConfig.alchemyApiKey !== undefined &&
+    networkConfig.rpcApiKey !== undefined &&
     networkConfig.deployerPrivateKey !== undefined &&
     networkConfig.testPrivateKey !== undefined &&
     networkConfig.test2PrivateKey !== undefined &&
@@ -72,22 +74,22 @@ function configureNetworks(networkConfig: BicNetworkConfig): NetworksUserConfig 
     return {
       hardhat: createHardhatNetworkConfig(
         networkConfig.hardhatFork,
-        networkConfig.alchemyApiKey,
+        networkConfig.rpcApiKey,
         networkConfig.deployerPrivateKey,
         networkConfig.testPrivateKey,
         networkConfig.test2PrivateKey,
       ),
       rinkeby_testnet: createRinkebyTestnetConfig(
-        networkConfig.alchemyApiKey,
+        networkConfig.rpcApiKey,
         networkConfig.deployerPrivateKey,
         networkConfig.testPrivateKey,
         networkConfig.test2PrivateKey,
       ),
-      eth_mainnet: createEthMainnetConfig(networkConfig.alchemyApiKey, networkConfig.deployerPrivateKey),
+      eth_mainnet: createEthMainnetConfig(networkConfig.rpcApiKey, networkConfig.deployerPrivateKey),
     }
   } else {
     return {
-      hardhat: createHardhatNetworkConfig(false, networkConfig.alchemyApiKey),
+      hardhat: createHardhatNetworkConfig(false, networkConfig.rpcApiKey),
     }
   }
 }
@@ -102,7 +104,7 @@ if (existsSync('./.env.local.json')) {
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   solidity: {
-    version: '0.8.3',
+    version: '0.8.4',
     settings: {
       optimizer: {
         enabled: true,
@@ -128,9 +130,12 @@ const config: HardhatUserConfig = {
     deployer: 0,
     test: 1,
     test2: 2,
+    treasury: {
+      1: '0xdc6ed9a7a2afa95a2cb920fd50a14a75248e9561', // TODO: deployer wallet, change by treasury one
+    },
   },
   etherscan: {
-    apiKey: networkConfig.etherscanApiKey,
+    apiKey: networkConfig.scanApiKey,
   },
   mocha: {
     timeout: 30000,

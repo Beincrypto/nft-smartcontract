@@ -1,8 +1,8 @@
 // Networks config
 
 export interface BicNetworkConfig {
-  etherscanApiKey: string
-  alchemyApiKey?: string
+  scanApiKey: string
+  rpcApiKey?: string
   hardhatFork?: boolean
   deployerPrivateKey?: string
   testPrivateKey?: string
