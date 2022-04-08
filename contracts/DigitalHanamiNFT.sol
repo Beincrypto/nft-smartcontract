@@ -9,23 +9,32 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 contract DigitalHanamiNFT is ERC721A, Ownable {
     using Strings for uint256;
 
+    enum Stage {
+        Closed,
+        Freemint,
+        Presale,
+        Sale
+    }
+
     string private baseURI;
     string private notRevealedUri;
     string public constant BASE_EXTENSION = ".json";
     bytes32 public baseURIHash;
     uint256 public baseURIHashUpdateTime;
 
+    Stage public currentStage;
     uint256 public constant PRESALE_MINT_MAX_AMOUNT = 2;
     uint256 public constant PRESALE_MINT_PRICE = 0.08 ether;
     uint256 public constant SALE_MINT_PRICE = 0.1 ether;
     uint256 public constant TOTAL_SUPPLY = 10000;
 
-    bool public isPresaleLive = false; // True only when presale is active
-    bool public isPublicSaleLive = false; // Covers the period of general public sales
     bool public revealed = false;
 
-    bytes32 private merkleRootHash;
+    bytes32 private presaleMerkleRootHash;
+    bytes32 private freeMintMerkleRootHash;
+    uint256 public pendingFreeMint = 0;
     address private treasuryWallet;
+    mapping(bytes32 => bool) public alreadyFreeMinted;
 
     event UpdateMetadataHash(bytes32 newHash);
 
@@ -58,16 +67,32 @@ contract DigitalHanamiNFT is ERC721A, Ownable {
         notRevealedUri = _notRevealedURI;
     }
 
-    function setPresaleStatus(bool _state) external onlyOwner {
-        isPresaleLive = _state;
+    function startFreemint() external onlyOwner {
+        currentStage = Stage.Freemint;
     }
 
-    function setPublicSaleStatus(bool _state) external onlyOwner {
-        isPublicSaleLive = _state;
+    function startPresale() external onlyOwner {
+        currentStage = Stage.Presale;
     }
 
-    function setMerkleRootHash(bytes32 _rootHash) public onlyOwner {
-        merkleRootHash = _rootHash;
+    function startPublicSale() external onlyOwner {
+        currentStage = Stage.Sale;
+    }
+
+    function closeSale() external onlyOwner {
+        currentStage = Stage.Closed;
+    }
+
+    function setPendingFreeMint(uint256 _pendingFreeMint) external onlyOwner {
+        pendingFreeMint = _pendingFreeMint;
+    }
+
+    function setPresaleMerkleRootHash(bytes32 _rootHash) external onlyOwner {
+        presaleMerkleRootHash = _rootHash;
+    }
+
+    function setFreeMintMerkleRootHash(bytes32 _rootHash) external onlyOwner {
+        freeMintMerkleRootHash = _rootHash;
     }
 
     function reveal(bool _state, string memory _newBaseURI) external onlyOwner {
@@ -75,41 +100,47 @@ contract DigitalHanamiNFT is ERC721A, Ownable {
         setBaseURI(_newBaseURI);
     }
 
-    function mintPresale(uint256 _mintAmount, bytes32[] calldata _merkleProof) external payable {
-        require(isPresaleLive, "presale not open yet");
+    function mint(uint256 _mintAmount, bytes32[] calldata _merkleProof) external payable {
+        require(currentStage == Stage.Presale || currentStage == Stage.Sale, "not open yet");
         require(_mintAmount > 0, "amount to mint invalid");
         // solhint-disable-next-line avoid-tx-origin
         require(tx.origin == msg.sender, "contracts not allowed");
 
-        uint256 newMintsPerAddress = _numberMinted(msg.sender) + _mintAmount;
-        require(newMintsPerAddress <= PRESALE_MINT_MAX_AMOUNT, "cannot mint amount requested");
+        if (currentStage == Stage.Presale) {
+            uint256 newMintsPerAddress = _numberMinted(msg.sender) + _mintAmount;
+            require(newMintsPerAddress <= PRESALE_MINT_MAX_AMOUNT, "cannot mint amount requested");
 
-        require(PRESALE_MINT_PRICE * _mintAmount <= msg.value, "insufficient funds");
+            require(PRESALE_MINT_PRICE * _mintAmount <= msg.value, "insufficient funds");
 
-        bytes32 leafHash = keccak256(abi.encode(msg.sender));
-        require(MerkleProof.verify(_merkleProof, merkleRootHash, leafHash), "wallet not in presale list");
+            bytes32 leafHash = keccak256(abi.encodePacked(msg.sender));
+            require(MerkleProof.verify(_merkleProof, presaleMerkleRootHash, leafHash), "wallet not in presale list");
+        } else {
+            require(SALE_MINT_PRICE * _mintAmount <= msg.value, "insufficient funds");
+        }
 
-        uint256 supply = currentIndex;
-        require(supply + _mintAmount <= TOTAL_SUPPLY, "collection sold out");
+        require(currentIndex + pendingFreeMint + _mintAmount <= TOTAL_SUPPLY, "collection sold out");
 
         _mint(msg.sender, _mintAmount, "", false);
     }
 
-    function mintPublicSale(uint256 _mintAmount) external payable {
-        require(isPublicSaleLive, "public sale not open yet");
-        require(_mintAmount > 0, "amount to mint invalid");
-        // solhint-disable-next-line avoid-tx-origin
-        require(tx.origin == msg.sender, "contracts not allowed");
+    function freeMint(bytes32[] calldata _merkleProof) external {
+        require(currentStage != Stage.Closed, "not open yet");
 
-        require(PRESALE_MINT_PRICE * _mintAmount <= msg.value, "insufficient funds");
+        bytes32 leafHash = keccak256(abi.encodePacked(msg.sender));
+        require(MerkleProof.verify(_merkleProof, freeMintMerkleRootHash, leafHash), "wallet not in free mint list");
 
-        uint256 supply = currentIndex;
-        require(supply + _mintAmount <= TOTAL_SUPPLY, "collection sold out");
+        require(!alreadyFreeMinted[leafHash], "already free minted");
+        alreadyFreeMinted[leafHash] = true;
+        pendingFreeMint -= 1;
 
-        _mint(msg.sender, _mintAmount, "", false);
+        // Here we check only `<` instead of `<=` because not adding qty (1) to currentIndex
+        require(currentIndex + pendingFreeMint < TOTAL_SUPPLY, "collection sold out");
+
+        _mint(msg.sender, 1, "", false);
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        // solhint-disable-next-line reason-string
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
         if (revealed == false) {
@@ -125,6 +156,7 @@ contract DigitalHanamiNFT is ERC721A, Ownable {
 
     function withdraw() public onlyOwner {
         uint256 balance = address(this).balance;
+        // solhint-disable-next-line reason-string
         require(payable(treasuryWallet).send(balance));
     }
 }
