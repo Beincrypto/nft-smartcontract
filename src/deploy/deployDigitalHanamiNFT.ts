@@ -4,18 +4,24 @@ import { DeployFunction } from 'hardhat-deploy/types'
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, network } = hre
   const { deploy } = deployments
-  const { deployer, test, treasury } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
   let symbol = 'TDHNM'
-  let treasuryWallet = test
+  let name = 'Test Hanami'
+  let presaleMintMaxAmount = 2
+  let presaleMintPrice = '8000000000000000'
+  let saleMintPrice = '10000000000000000'
+  const maxSupply = 10000
 
   if (network.name === 'eth_mainnet') {
     symbol = 'DHNM'
-    treasuryWallet = treasury // TODO: set address on hardhat.config
+    name = 'Digital Hanami'
+    presaleMintPrice = '80000000000000000'
+    saleMintPrice = '100000000000000000'
   }
 
   await deploy('DigitalHanamiNFT', {
     from: deployer,
-    args: ['Digital Hanami', symbol, treasuryWallet],
+    args: [name, symbol, presaleMintMaxAmount, presaleMintPrice, saleMintPrice, maxSupply],
     log: true,
     deterministicDeployment: false,
   })
