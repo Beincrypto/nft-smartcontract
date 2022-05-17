@@ -5,8 +5,9 @@ pragma solidity ^0.8.4;
 import "./ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract DigitalHanamiNFT is ERC721A, Ownable {
+contract DigitalHanamiNFT is ERC721A, ERC2981, Ownable {
     using Strings for uint256;
 
     enum Stage {
@@ -76,6 +77,14 @@ contract DigitalHanamiNFT is ERC721A, Ownable {
      */
     function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
         notRevealedUri = _notRevealedURI;
+    }
+
+    /**
+     * @dev Set the royalty for secondary market sales.
+     * The base denominator for percentage is internally set to 10000, so 1.00% should be set as 100.
+     */
+    function setRoyalty(address _receiver, uint96 _percentage) public onlyOwner {
+        _setDefaultRoyalty(_receiver, _percentage);
     }
 
     /**
@@ -213,5 +222,12 @@ contract DigitalHanamiNFT is ERC721A, Ownable {
         uint256 balance = address(this).balance;
         // solhint-disable-next-line reason-string
         require(payable(_to).send(balance));
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721A, ERC2981) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
