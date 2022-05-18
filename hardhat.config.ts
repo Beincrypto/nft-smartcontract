@@ -130,9 +130,6 @@ const config: HardhatUserConfig = {
     deployer: 0,
     test: 1,
     test2: 2,
-    treasury: {
-      1: '0x4cbc4022fd346ea8b1eff9e11e9f0d76767b5fb2', // TODO: deployer wallet, change by treasury one
-    },
   },
   etherscan: {
     apiKey: networkConfig.scanApiKey,
