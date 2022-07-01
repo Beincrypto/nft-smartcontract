@@ -7,13 +7,13 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "typechain": "npx hardhat typechain",
-    "prettier:check": "npx prettier --check --loglevel error .",
-    "prettier": "npx prettier --write .",
+    "prettier": "npx prettier --check --loglevel error .",
+    "format": "npx prettier --write .",
     "lint:sol": "npx solhint -f table contracts/**/*.sol",
     "lint:ts": "npx eslint -f table .",
     "lint": "yarn lint:sol && yarn lint:ts",
     "prepare": "npx husky install",
-    "pre-commit": "yarn prettier:check && npx commitlint -e"
+    "pre-commit": "yarn prettier && npx commitlint -e"
   },
   "keywords": [],
   "author": "",

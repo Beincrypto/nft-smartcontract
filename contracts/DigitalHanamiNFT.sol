@@ -1,6 +1,6 @@
 // contracts/DigitalHanamiNFT.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.9;
 
 import "./ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
